@@ -10,6 +10,12 @@ import { EventEmitter } from 'eventemitter3'
 import { PhantomWallet, PhantomWalletEvents } from './types'
 import { strict as assert } from 'assert'
 
+import debug from 'debug'
+
+const logInfo = debug('phan:info')
+const logDebug = debug('phan:debug')
+const logError = debug('phan:error')
+
 class PhantomWalletMock
   extends EventEmitter<PhantomWalletEvents>
   implements PhantomWallet
@@ -22,6 +28,11 @@ class PhantomWalletMock
     private readonly _commitmentOrConfig?: Commitment | ConnectionConfig
   ) {
     super()
+    logInfo('Initializing Phan Wallet Mock: %o', {
+      cluster: _connectionURL,
+      pubkey: _keypair.publicKey.toBase58(),
+      commitment: _commitmentOrConfig,
+    })
   }
 
   get connection(): Connection {
@@ -48,6 +59,10 @@ class PhantomWalletMock
   }
 
   signTransaction(transaction: Transaction): Promise<Transaction> {
+    logDebug(
+      'Attempting to sign transaction with %d instruction(s)',
+      transaction.instructions.length
+    )
     return new Promise(async (resolve, reject) => {
       try {
         assert(this._connection != null, 'Need to connect wallet first')
@@ -56,14 +71,18 @@ class PhantomWalletMock
         transaction.recentBlockhash = blockhash
 
         transaction.sign(this.signer)
+        logDebug('Signed transaction successfully')
         resolve(transaction)
       } catch (err) {
+        logError('Failed signing transaction')
+        logError(err)
         reject(err)
       }
     })
   }
 
   signAllTransactions(transactions: Transaction[]): Promise<Transaction[]> {
+    logDebug('Signing %d transactions', transactions.length)
     return Promise.all(transactions.map((tx) => this.signTransaction(tx)))
   }
 
@@ -76,11 +95,13 @@ class PhantomWalletMock
       this._connectionURL,
       this._commitmentOrConfig
     )
+    logDebug('wallet connected')
     return Promise.resolve()
   }
 
   disconnect(): Promise<void> {
     this._connection = undefined
+    logDebug('wallet disconnected')
     return Promise.resolve()
   }
 
