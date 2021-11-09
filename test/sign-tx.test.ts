@@ -6,8 +6,8 @@ import {
   TransactionInstruction,
   TransactionSignature,
 } from '@solana/web3.js'
-import { createWalletMock } from 'src/phan-wallet-mock'
-import { createAccount, DEVNET, isCI, LOCALNET } from './utils'
+import { createWalletMock } from '../src/phan-wallet-mock'
+import { createAccount, LOCALNET } from './utils'
 import spok from 'spok'
 import test from 'tape'
 import * as util from 'util'
@@ -33,21 +33,21 @@ function trimTransferIx(
   }
 }
 
-async function setup(net = isCI ? DEVNET : LOCALNET) {
+async function setup(net = LOCALNET) {
   const payer = Keypair.generate()
   const wallet = createWalletMock(net, payer, 'confirmed')
 
   await wallet.connect()
   const signature = await wallet.connection.requestAirdrop(
     payer.publicKey,
-    LAMPORTS_PER_SOL * 10
+    LAMPORTS_PER_SOL * 5
   )
   await wallet.connection.confirmTransaction(signature)
 
   return { payer, wallet }
 }
 
-test.skip('sign: empty transaction', async (t) => {
+test('sign: empty transaction', async (t) => {
   try {
     const { wallet, payer } = await setup()
     const publicKey = payer.publicKey
