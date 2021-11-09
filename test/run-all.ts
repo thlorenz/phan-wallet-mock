@@ -40,14 +40,14 @@ async function setup(net = isCI ? DEVNET : LOCALNET) {
   await wallet.connect()
   const signature = await wallet.connection.requestAirdrop(
     payer.publicKey,
-    LAMPORTS_PER_SOL * 10
+    LAMPORTS_PER_SOL * 5
   )
   await wallet.connection.confirmTransaction(signature)
 
   return { payer, wallet }
 }
 
-test.skip('sign: empty transaction', async (t) => {
+test('sign: empty transaction', async (t) => {
   try {
     const { wallet, payer } = await setup()
     const publicKey = payer.publicKey
