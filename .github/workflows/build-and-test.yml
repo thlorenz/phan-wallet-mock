@@ -6,11 +6,18 @@ on:
   pull_request: 
     branches: [master]
 
+env:
+  SOLANA_VERSION: 1.8.2
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - uses: ./.github/actions/install-linux-build-deps
+      - uses: ./.github/actions/install-solana
+        with: 
+          solana_version: ${{ env.SOLANA_VERSION }}
 
       - uses: actions/setup-node@v2
         with:
@@ -23,6 +30,11 @@ jobs:
 
       - name: Install modules
         run: yarn install
+
+      - name: Launch local Validator
+        run: |
+          solana-test-validator -r > /dev/null &
+          sleep 2 
 
       - name: Run Tests
         run: yarn test
