@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: ./.github/actions/install-linux-build-deps
       - uses: ./.github/actions/install-solana
         with: 
           solana_version: ${{ env.SOLANA_VERSION }}
