@@ -2,14 +2,16 @@
   "name": "phan-wallet-mock",
   "version": "0.0.0",
   "description": "Mock version of Phantom Wallet. ONLY USE FOR TESTING!!!",
-  "main": "dist/phan-wallet-mock.js",
+  "main": "dist/src/phan-wallet-mock.js",
   "author": "Thorsten Lorenz <thlorenz@gmx.de>",
   "license": "MIT",
   "private": false,
   "scripts": {
     "prepublish": "yarn build",
+    "pretest": "yarn build",
     "build": "tsc -p ./tsconfig.json",
-    "test": "esr test/run-all.ts",
+    "test": "tape dist/test/*.test.js",
+    "test-ts": "esr test/sign-tx.test.ts",
     "lint": "prettier -c ./src/",
     "lint:fix": "prettier --format ./src"
   },

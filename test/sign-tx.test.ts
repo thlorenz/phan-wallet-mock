@@ -6,8 +6,8 @@ import {
   TransactionInstruction,
   TransactionSignature,
 } from '@solana/web3.js'
-import { createWalletMock } from 'src/phan-wallet-mock'
-import { createAccount, isCI, LOCALNET } from './utils'
+import { createWalletMock } from '../src/phan-wallet-mock'
+import { createAccount, LOCALNET } from './utils'
 import spok from 'spok'
 import test from 'tape'
 import * as util from 'util'
@@ -33,8 +33,7 @@ function trimTransferIx(
   }
 }
 
-// TODO(thlorenz): DEVNET caused us to get rate limited
-async function setup(net = isCI ? LOCALNET : LOCALNET) {
+async function setup(net = LOCALNET) {
   const payer = Keypair.generate()
   const wallet = createWalletMock(net, payer, 'confirmed')
 
