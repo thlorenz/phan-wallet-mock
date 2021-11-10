@@ -1,6 +1,6 @@
 import { Keypair, Transaction } from '@solana/web3.js'
 import { createWalletMock } from 'src/phan-wallet-mock'
-import { dump, LOCALNET } from './utils'
+import { LOCALNET } from './utils'
 import test from 'tape'
 
 function setup(net = LOCALNET) {
