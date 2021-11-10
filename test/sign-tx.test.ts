@@ -1,6 +1,5 @@
 import {
   Keypair,
-  LAMPORTS_PER_SOL,
   RpcResponseAndContext,
   SignatureResult,
   SystemProgram,
@@ -8,8 +7,7 @@ import {
   TransactionInstruction,
   TransactionSignature,
 } from '@solana/web3.js'
-import { createWalletMock } from '../src/phan-wallet-mock'
-import { createAccount, isBuffer, LOCALNET } from './utils'
+import { createAccount, isBuffer, setupWithPayer } from './utils'
 import spok from 'spok'
 import test from 'tape'
 
@@ -21,23 +19,9 @@ function trimTransferIx(
   }
 }
 
-async function setup(net = LOCALNET) {
-  const payer = Keypair.generate()
-  const wallet = createWalletMock(net, payer, 'confirmed')
-
-  await wallet.connect()
-  const signature = await wallet.connection.requestAirdrop(
-    payer.publicKey,
-    LAMPORTS_PER_SOL * 5
-  )
-  await wallet.connection.confirmTransaction(signature)
-
-  return { payer, wallet }
-}
-
 test('sign: empty transaction', async (t) => {
   try {
-    const { wallet, payer } = await setup()
+    const { wallet, payer } = await setupWithPayer()
     const publicKey = payer.publicKey
     const tx = new Transaction()
     const signedTx = await wallet.signTransaction(tx)
@@ -52,7 +36,7 @@ test('sign: empty transaction', async (t) => {
 
 test('sign: transaction with one transfer instruction', async (t) => {
   try {
-    const { wallet, payer } = await setup()
+    const { wallet, payer } = await setupWithPayer()
     const publicKey = payer.publicKey
     let sig: TransactionSignature
 
@@ -107,7 +91,7 @@ test('sign: transaction with one transfer instruction', async (t) => {
 
 test('sign: multiple transactions with one transfer instruction each', async (t) => {
   try {
-    const { wallet, payer } = await setup()
+    const { wallet, payer } = await setupWithPayer()
     const publicKey = payer.publicKey
     let sig: TransactionSignature
     let res: RpcResponseAndContext<SignatureResult>
