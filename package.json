@@ -22,6 +22,7 @@
   "files": [
     "dist/src/*"
   ],
+  "repository": "git@github.com:thlorenz/phan-wallet-mock.git",
   "devDependencies": {
     "@types/bs58": "^4.0.1",
     "@types/debug": "^4.1.7",
