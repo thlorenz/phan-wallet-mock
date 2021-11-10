@@ -1,11 +1,11 @@
 import { Keypair, Transaction } from '@solana/web3.js'
-import { createWalletMock } from '../src/phan-wallet-mock'
+import { PhantomWalletMock } from '../src/phan-wallet-mock'
 import { LOCALNET } from './utils'
 import test from 'tape'
 
 function setup(net = LOCALNET) {
   const payer = Keypair.generate()
-  const wallet = createWalletMock(net, payer, 'confirmed')
+  const wallet = PhantomWalletMock.create(net, payer, 'confirmed')
   return wallet
 }
 

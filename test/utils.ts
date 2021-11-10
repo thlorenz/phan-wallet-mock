@@ -8,7 +8,7 @@ import {
   SystemProgram,
   Transaction,
 } from '@solana/web3.js'
-import { createWalletMock, PhantomWalletMock } from '../src/phan-wallet-mock'
+import { PhantomWalletMock } from '../src/phan-wallet-mock'
 import * as util from 'util'
 
 export const DEVNET = clusterApiUrl('devnet')
@@ -31,10 +31,10 @@ export function isBuffer(x: any): x is Buffer {
 }
 
 export async function setupWithPayer(
+  payer = Keypair.generate(),
   net = LOCALNET
 ): Promise<{ payer: Keypair; wallet: PhantomWalletMock }> {
-  const payer = Keypair.generate()
-  const wallet = createWalletMock(net, payer, 'confirmed')
+  const wallet = PhantomWalletMock.create(net, payer, 'confirmed')
 
   await wallet.connect()
   const signature = await wallet.connection.requestAirdrop(

@@ -11,14 +11,16 @@
     "pretest": "yarn build",
     "build": "tsc -p ./tsconfig.json",
     "test": "tape dist/test/*.test.js",
-    "test-ts": "esr test/connection.test.ts && esr test/sign-tx.test.ts",
+    "test-ts": "esr test/sign-msg.test.ts && esr test/connection.test.ts && esr test/sign-tx.test.ts",
     "lint": "prettier -c ./src/",
     "lint:fix": "prettier --format ./src"
   },
   "devDependencies": {
+    "@types/bs58": "^4.0.1",
     "@types/debug": "^4.1.7",
     "@types/node": "^16.11.7",
     "@types/tape": "^4.13.2",
+    "bs58": "^4.0.1",
     "esbuild": "^0.13.13",
     "esbuild-runner": "^2.2.1",
     "prettier": "^2.4.1",
@@ -32,6 +34,7 @@
     "@solana/web3.js": "^1.30.2",
     "debug": "^4.3.2",
     "supports-color": "^9.0.2",
-    "tslib": "^2.3.1"
+    "tslib": "^2.3.1",
+    "tweetnacl": "^1.0.3"
   }
 }

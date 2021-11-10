@@ -10,6 +10,7 @@ import { EventEmitter } from 'eventemitter3'
 import { PhantomWallet, PhantomWalletEvents } from './types'
 import { strict as assert } from 'assert'
 
+import nacl from 'tweetnacl'
 import debug from 'debug'
 
 const logInfo = debug('phan:info')
@@ -90,8 +91,12 @@ export class PhantomWalletMock
     return new Promise(async (resolve, reject) => {
       try {
         assert(this._connection != null, 'Need to connect wallet first')
-        // TODO(thlorenz): implement for real
-        resolve({ signature: Uint8Array.from([]) })
+        const signature = nacl.sign.detached(message, this._keypair.secretKey)
+        const res = {
+          signature,
+          publicKey: this._keypair.publicKey,
+        }
+        return resolve(res)
       } catch (err) {
         logError('Failed signing message')
         logError(err)
@@ -113,17 +118,17 @@ export class PhantomWalletMock
   disconnect(): Promise<void> {
     this._connection = undefined
     logDebug('wallet disconnected')
-    this.emit('disconnect')
+    this._handleDisconnect()
     return Promise.resolve()
   }
 
   _handleDisconnect(...args: unknown[]): unknown {
-    throw new Error('Method not implemented.')
+    return this.emit('disconnect', args)
   }
-}
 
-export const createWalletMock = (
-  connectionURL: string,
-  keypair: Keypair,
-  commitmentOrConfig?: Commitment | ConnectionConfig
-) => new PhantomWalletMock(connectionURL, keypair, commitmentOrConfig)
+  static create = (
+    connectionURL: string,
+    keypair: Keypair,
+    commitmentOrConfig?: Commitment | ConnectionConfig
+  ) => new PhantomWalletMock(connectionURL, keypair, commitmentOrConfig)
+}
