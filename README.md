@@ -28,6 +28,8 @@ const { wallet, payer } = await setupWithPayer()
 window.solana = wallet
 ```
 
+[API documentation](https://thlorenz.github.io/phan-wallet-mock/docs/index.html)
+
 ## How it Works
 
 Unlike with real wallets `phan-wallet-mock` requires the user to provide a full `Keypair` which
