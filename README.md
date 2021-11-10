@@ -21,7 +21,7 @@ export async function setupWithPayer(
   return { payer, wallet }
 }
 
-const { wallet, payer } = await setupWithPayer
+const { wallet, payer } = await setupWithPayer()
 
 // NOTE: this only works when no actual Phantom extension is present as then `window.solana`
 // cannot be overwritten
