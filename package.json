@@ -13,7 +13,8 @@
     "test": "tape dist/test/*.test.js",
     "test-ts": "esr test/sign-msg.test.ts && esr test/connection.test.ts && esr test/sign-tx.test.ts",
     "lint": "prettier -c ./src/",
-    "lint:fix": "prettier --format ./src"
+    "lint:fix": "prettier --format ./src",
+    "doc": "typedoc src/*.ts --readme README.md"
   },
   "devDependencies": {
     "@types/bs58": "^4.0.1",
