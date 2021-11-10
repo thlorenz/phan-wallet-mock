@@ -87,7 +87,17 @@ class PhantomWalletMock
   }
 
   signMessage(message: Uint8Array): Promise<{ signature: Uint8Array }> {
-    throw new Error('Method not implemented.')
+    return new Promise(async (resolve, reject) => {
+      try {
+        assert(this._connection != null, 'Need to connect wallet first')
+        // TODO(thlorenz): implement for real
+        resolve({ signature: Uint8Array.from([]) })
+      } catch (err) {
+        logError('Failed signing message')
+        logError(err)
+        reject(err)
+      }
+    })
   }
 
   connect(): Promise<void> {
@@ -96,12 +106,14 @@ class PhantomWalletMock
       this._commitmentOrConfig
     )
     logDebug('wallet connected')
+    this.emit('connect')
     return Promise.resolve()
   }
 
   disconnect(): Promise<void> {
     this._connection = undefined
     logDebug('wallet disconnected')
+    this.emit('disconnect')
     return Promise.resolve()
   }
 

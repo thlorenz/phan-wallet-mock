@@ -7,6 +7,7 @@ import {
   SystemProgram,
   Transaction,
 } from '@solana/web3.js'
+import * as util from 'util'
 
 export const DEVNET = clusterApiUrl('devnet')
 export const TESTNET = clusterApiUrl('testnet')
@@ -14,6 +15,18 @@ export const MAINNET_BETA = clusterApiUrl('mainnet-beta')
 export const LOCALNET = 'http://127.0.0.1:8899'
 
 export const isCI = process.env.CI != null
+
+export function inspect(x: any) {
+  return util.inspect(x, { depth: 5 })
+}
+
+export function dump(x: any) {
+  console.log(inspect(x))
+}
+
+export function isBuffer(x: any): x is Buffer {
+  return Buffer.isBuffer(x)
+}
 
 export async function createAccountIx(
   connection: Connection,

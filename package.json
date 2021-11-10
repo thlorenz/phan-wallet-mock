@@ -11,7 +11,7 @@
     "pretest": "yarn build",
     "build": "tsc -p ./tsconfig.json",
     "test": "tape dist/test/*.test.js",
-    "test-ts": "esr test/sign-tx.test.ts",
+    "test-ts": "esr test/connection.test.ts && esr test/sign-tx.test.ts",
     "lint": "prettier -c ./src/",
     "lint:fix": "prettier --format ./src"
   },
