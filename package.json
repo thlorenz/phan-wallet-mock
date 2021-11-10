@@ -16,6 +16,12 @@
     "lint:fix": "prettier --format ./src",
     "doc": "typedoc src/*.ts --readme README.md"
   },
+  "directories": {
+    "dist": "./dist/src"
+  },
+  "files": [
+    "dist/src/*"
+  ],
   "devDependencies": {
     "@types/bs58": "^4.0.1",
     "@types/debug": "^4.1.7",
