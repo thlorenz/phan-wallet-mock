@@ -16,13 +16,13 @@ const logInfo = debug('phan:info')
 const logDebug = debug('phan:debug')
 const logError = debug('phan:error')
 
-class PhantomWalletMock
+export class PhantomWalletMock
   extends EventEmitter<PhantomWalletEvents>
   implements PhantomWallet
 {
   readonly isPhantom = true
   private _connection: Connection | undefined
-  constructor(
+  private constructor(
     private readonly _connectionURL: string,
     private readonly _keypair: Keypair,
     private readonly _commitmentOrConfig?: Commitment | ConnectionConfig
