@@ -17,6 +17,16 @@ const logInfo = debug('phan:info')
 const logDebug = debug('phan:debug')
 const logError = debug('phan:error')
 
+/**
+ * Standin for the the [https://phantom.app/ | phantom wallet] to use while testing.
+ * Behaves as much as possible as the original which is why care needs to be taken when using it.
+ *
+ * The main difference is that no user confirmation is required to approve a
+ * transaction or signature.
+ *
+ * This means that user approval is automatic!
+ *
+ */
 export class PhantomWalletMock
   extends EventEmitter<PhantomWalletEvents>
   implements PhantomWallet
@@ -126,6 +136,14 @@ export class PhantomWalletMock
     return this.emit('disconnect', args)
   }
 
+  /**
+   * Creates a {@see PhantomWalletMock} instance with the provided info.
+   *
+   * @param connectionURL cluster to connect to, i.e. `https://api.devnet.solana.com` or `http://127.0.0.1:8899`
+   * @param keypair the private and public key of the wallet to use, i.e. the payer/signer
+   * @param commitmentOrConfig passed to the {@link * https://solana-labs.github.io/solana-web3.js/classes/Connection.html#constructor }
+   *                           when creating a connection to the cluster
+   */
   static create = (
     connectionURL: string,
     keypair: Keypair,
