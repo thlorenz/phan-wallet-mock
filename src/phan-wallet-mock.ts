@@ -177,9 +177,8 @@ export class PhantomWalletMock
   ) => new PhantomWalletMock(connectionURL, keypair, commitmentOrConfig)
 }
 
-export const initWalletMockProvider = (
-  win: Window & { solana: PhantomWallet | undefined }
-) => {
+export const initWalletMockProvider = (winin: Window) => {
+  const win = winin as Window & { solana: PhantomWallet | undefined }
   const payer = Keypair.generate()
   const wallet = PhantomWalletMock.create(LOCALNET, payer, 'confirmed')
   win.solana = wallet
