@@ -4,9 +4,14 @@ import {
   Connection,
   ConnectionConfig,
   Keypair,
+  LAMPORTS_PER_SOL,
+  RpcResponseAndContext,
+  SignatureResult,
   Signer,
   Transaction,
 } from '@solana/web3.js'
+export * from './types'
+
 import { EventEmitter } from 'eventemitter3'
 import { PhantomWallet, PhantomWalletEvents } from './types'
 import assert_module from 'assert'
@@ -86,6 +91,16 @@ export class PhantomWalletMock
     return this._signer
   }
 
+  get connectionURL() {
+    return this._connectionURL
+  }
+
+  get commitment(): Commitment | undefined {
+    const comm = this._commitmentOrConfig
+    if (comm == null) return undefined
+    return typeof comm === 'string' ? comm : comm.commitment
+  }
+
   signTransaction(txIn: Transaction): Promise<Transaction> {
     const transaction: TransactionWithInternals =
       txIn as TransactionWithInternals
@@ -159,6 +174,21 @@ export class PhantomWalletMock
 
   _handleDisconnect(...args: unknown[]): unknown {
     return this.emit('disconnect', args)
+  }
+
+  /**
+   * Added convenience API for Testing purposes
+   */
+  async requestAirdrop(
+    sol: number
+  ): Promise<RpcResponseAndContext<SignatureResult>> {
+    assert(this._connection != null, 'Need to connect requesting airdrop')
+
+    const signature = await this._connection.requestAirdrop(
+      this.publicKey,
+      LAMPORTS_PER_SOL * sol
+    )
+    return this.connection.confirmTransaction(signature)
   }
 
   /**

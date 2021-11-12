@@ -1,7 +1,6 @@
 import {
   Connection,
   Keypair,
-  LAMPORTS_PER_SOL,
   PublicKey,
   sendAndConfirmTransaction,
   SystemProgram,
@@ -31,11 +30,7 @@ export async function setupWithPayer(
   const wallet = PhantomWalletMock.create(net, payer, 'confirmed')
 
   await wallet.connect()
-  const signature = await wallet.connection.requestAirdrop(
-    payer.publicKey,
-    LAMPORTS_PER_SOL * 5
-  )
-  await wallet.connection.confirmTransaction(signature)
+  await wallet.requestAirdrop(5)
 
   return { payer, wallet }
 }
