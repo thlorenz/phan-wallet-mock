@@ -1,5 +1,4 @@
 import {
-  clusterApiUrl,
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
@@ -8,13 +7,8 @@ import {
   SystemProgram,
   Transaction,
 } from '@solana/web3.js'
-import { PhantomWalletMock } from '../src/phan-wallet-mock'
+import { LOCALNET, PhantomWalletMock } from '../src/phan-wallet-mock'
 import * as util from 'util'
-
-export const DEVNET = clusterApiUrl('devnet')
-export const TESTNET = clusterApiUrl('testnet')
-export const MAINNET_BETA = clusterApiUrl('mainnet-beta')
-export const LOCALNET = 'http://127.0.0.1:8899'
 
 export const isCI = process.env.CI != null
 

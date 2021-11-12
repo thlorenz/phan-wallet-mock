@@ -1,4 +1,5 @@
 import {
+  clusterApiUrl,
   Commitment,
   Connection,
   ConnectionConfig,
@@ -20,11 +21,15 @@ import {
   TransactionWithInternals,
   verifySignatures,
 } from './web3js'
-import { LOCALNET } from 'test/utils'
 
 const logInfo = debug('phan:info')
 const logDebug = debug('phan:debug')
 const logError = debug('phan:error')
+
+export const DEVNET = clusterApiUrl('devnet')
+export const TESTNET = clusterApiUrl('testnet')
+export const MAINNET_BETA = clusterApiUrl('mainnet-beta')
+export const LOCALNET = 'http://127.0.0.1:8899'
 
 /**
  * Standin for the the [https://phantom.app/ | phantom wallet] to use while testing.
@@ -170,4 +175,13 @@ export class PhantomWalletMock
     keypair: Keypair,
     commitmentOrConfig?: Commitment | ConnectionConfig
   ) => new PhantomWalletMock(connectionURL, keypair, commitmentOrConfig)
+}
+
+export const initWalletMockProvider = (
+  win: Window & { solana: PhantomWallet | undefined }
+) => {
+  const payer = Keypair.generate()
+  const wallet = PhantomWalletMock.create(LOCALNET, payer, 'confirmed')
+  win.solana = wallet
+  return { wallet, payer }
 }
