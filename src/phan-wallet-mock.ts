@@ -8,7 +8,7 @@ import {
 } from '@solana/web3.js'
 import { EventEmitter } from 'eventemitter3'
 import { PhantomWallet, PhantomWalletEvents } from './types'
-import * as assert_module from 'assert'
+import assert_module from 'assert'
 
 const assert: typeof import('assert') = assert_module.strict ?? assert_module
 
@@ -18,6 +18,12 @@ import debug from 'debug'
 const logInfo = debug('phan:info')
 const logDebug = debug('phan:debug')
 const logError = debug('phan:error')
+
+function forceUint8Array(arrlike: Uint8Array): Uint8Array {
+  // Some Uint8Array we get here aren't accepted by nacl as `instanceof Uint8Array === false`
+  // Therefore we wrap it (again) to be very sure :)
+  return Uint8Array.from(arrlike)
+}
 
 /**
  * Standin for the the [https://phantom.app/ | phantom wallet] to use while testing.
@@ -103,7 +109,11 @@ export class PhantomWalletMock
     return new Promise(async (resolve, reject) => {
       try {
         assert(this._connection != null, 'Need to connect wallet first')
-        const signature = nacl.sign.detached(message, this._keypair.secretKey)
+        debugger
+        const signature = nacl.sign.detached(
+          forceUint8Array(message),
+          this._keypair.secretKey
+        )
         const res = {
           signature,
           publicKey: this._keypair.publicKey,
