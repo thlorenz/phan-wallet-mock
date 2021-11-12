@@ -14,16 +14,17 @@ const assert: typeof import('assert') = assert_module.strict ?? assert_module
 
 import nacl from 'tweetnacl'
 import debug from 'debug'
+import { forceUint8Array } from './utils'
+import {
+  partialSign,
+  TransactionWithInternals,
+  verifySignatures,
+} from './web3js'
+import { LOCALNET } from 'test/utils'
 
 const logInfo = debug('phan:info')
 const logDebug = debug('phan:debug')
 const logError = debug('phan:error')
-
-function forceUint8Array(arrlike: Uint8Array): Uint8Array {
-  // Some Uint8Array we get here aren't accepted by nacl as `instanceof Uint8Array === false`
-  // Therefore we wrap it (again) to be very sure :)
-  return Uint8Array.from(arrlike)
-}
 
 /**
  * Standin for the the [https://phantom.app/ | phantom wallet] to use while testing.
@@ -40,6 +41,7 @@ export class PhantomWalletMock
   implements PhantomWallet
 {
   readonly isPhantom = true
+  private readonly _signer: Signer
   private _connection: Connection | undefined
   private constructor(
     private readonly _connectionURL: string,
@@ -52,6 +54,11 @@ export class PhantomWalletMock
       pubkey: _keypair.publicKey.toBase58(),
       commitment: _commitmentOrConfig,
     })
+
+    this._signer = {
+      publicKey: this._keypair.publicKey,
+      secretKey: forceUint8Array(this._keypair.secretKey),
+    }
   }
 
   get connection(): Connection {
@@ -71,13 +78,15 @@ export class PhantomWalletMock
   }
 
   get signer(): Signer {
-    return {
-      publicKey: this._keypair.publicKey,
-      secretKey: this._keypair.secretKey,
-    }
+    return this._signer
   }
 
-  signTransaction(transaction: Transaction): Promise<Transaction> {
+  signTransaction(txIn: Transaction): Promise<Transaction> {
+    const transaction: TransactionWithInternals =
+      txIn as TransactionWithInternals
+    transaction._partialSign = partialSign.bind(transaction)
+    transaction._verifySignatures = verifySignatures.bind(transaction)
+
     logDebug(
       'Attempting to sign transaction with %d instruction(s)',
       transaction.instructions.length
@@ -89,7 +98,7 @@ export class PhantomWalletMock
         const { blockhash } = await this._connection.getRecentBlockhash()
         transaction.recentBlockhash = blockhash
 
-        transaction.sign(this.signer)
+        transaction.sign(this._signer)
         logDebug('Signed transaction successfully')
         resolve(transaction)
       } catch (err) {
