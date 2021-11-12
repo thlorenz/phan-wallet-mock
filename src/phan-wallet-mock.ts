@@ -8,7 +8,9 @@ import {
 } from '@solana/web3.js'
 import { EventEmitter } from 'eventemitter3'
 import { PhantomWallet, PhantomWalletEvents } from './types'
-import { strict as assert } from 'assert'
+import * as assert_module from 'assert'
+
+const assert: typeof import('assert') = assert_module.strict ?? assert_module
 
 import nacl from 'tweetnacl'
 import debug from 'debug'
