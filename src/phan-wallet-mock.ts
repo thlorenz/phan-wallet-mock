@@ -123,7 +123,6 @@ export class PhantomWalletMock
     return new Promise(async (resolve, reject) => {
       try {
         assert(this._connection != null, 'Need to connect wallet first')
-        debugger
         const signature = nacl.sign.detached(
           forceUint8Array(message),
           this._keypair.secretKey
