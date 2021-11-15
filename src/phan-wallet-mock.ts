@@ -1,8 +1,10 @@
 import {
   clusterApiUrl,
   Commitment,
+  ConfirmedTransaction,
   Connection,
   ConnectionConfig,
+  Finality,
   Keypair,
   LAMPORTS_PER_SOL,
   RpcResponseAndContext,
@@ -26,6 +28,7 @@ import {
   TransactionWithInternals,
   verifySignatures,
 } from './web3js'
+import bs58 from 'bs58'
 
 const logInfo = debug('phan:info')
 const logDebug = debug('phan:debug')
@@ -53,6 +56,7 @@ export class PhantomWalletMock
   readonly isPhantom = true
   private readonly _signer: Signer
   private _connection: Connection | undefined
+  private _transactionSignatures: string[] = []
   private constructor(
     private readonly _connectionURL: string,
     private readonly _keypair: Keypair,
@@ -101,6 +105,21 @@ export class PhantomWalletMock
     return typeof comm === 'string' ? comm : comm.commitment
   }
 
+  get transactionSignatures(): string[] {
+    return Array.from(this._transactionSignatures)
+  }
+
+  getLastConfirmedTransaction(
+    commitment?: Finality
+  ): Promise<null | ConfirmedTransaction> {
+    const lastSig = this._transactionSignatures.pop()
+    if (lastSig == null) {
+      logDebug('No transaction signature found')
+      return Promise.resolve(null)
+    }
+    return this.connection.getConfirmedTransaction(lastSig, commitment)
+  }
+
   signTransaction(txIn: Transaction): Promise<Transaction> {
     const transaction: TransactionWithInternals =
       txIn as TransactionWithInternals
@@ -120,6 +139,7 @@ export class PhantomWalletMock
 
         transaction.sign(this._signer)
         logDebug('Signed transaction successfully')
+        this._transactionSignatures.push(bs58.encode(transaction.signature!))
         resolve(transaction)
       } catch (err) {
         logError('Failed signing transaction')
