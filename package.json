@@ -1,6 +1,6 @@
 {
   "name": "phan-wallet-mock",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Mock version of Phantom Wallet. ONLY USE FOR TESTING!!!",
   "main": "dist/src/phan-wallet-mock.js",
   "author": "Thorsten Lorenz <thlorenz@gmx.de>",
