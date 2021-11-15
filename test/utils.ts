@@ -1,20 +1,13 @@
 import {
-  clusterApiUrl,
   Connection,
   Keypair,
-  LAMPORTS_PER_SOL,
   PublicKey,
   sendAndConfirmTransaction,
   SystemProgram,
   Transaction,
 } from '@solana/web3.js'
-import { PhantomWalletMock } from '../src/phan-wallet-mock'
+import { LOCALNET, PhantomWalletMock } from '../src/phan-wallet-mock'
 import * as util from 'util'
-
-export const DEVNET = clusterApiUrl('devnet')
-export const TESTNET = clusterApiUrl('testnet')
-export const MAINNET_BETA = clusterApiUrl('mainnet-beta')
-export const LOCALNET = 'http://127.0.0.1:8899'
 
 export const isCI = process.env.CI != null
 
@@ -37,11 +30,7 @@ export async function setupWithPayer(
   const wallet = PhantomWalletMock.create(net, payer, 'confirmed')
 
   await wallet.connect()
-  const signature = await wallet.connection.requestAirdrop(
-    payer.publicKey,
-    LAMPORTS_PER_SOL * 5
-  )
-  await wallet.connection.confirmTransaction(signature)
+  await wallet.requestAirdrop(5)
 
   return { payer, wallet }
 }

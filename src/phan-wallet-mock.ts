@@ -1,21 +1,43 @@
 import {
+  clusterApiUrl,
   Commitment,
+  ConfirmedTransaction,
   Connection,
   ConnectionConfig,
+  Finality,
   Keypair,
+  LAMPORTS_PER_SOL,
+  RpcResponseAndContext,
+  SignatureResult,
   Signer,
   Transaction,
 } from '@solana/web3.js'
+export * from './types'
+
 import { EventEmitter } from 'eventemitter3'
 import { PhantomWallet, PhantomWalletEvents } from './types'
-import { strict as assert } from 'assert'
+import assert_module from 'assert'
+
+const assert: typeof import('assert') = assert_module.strict ?? assert_module
 
 import nacl from 'tweetnacl'
 import debug from 'debug'
+import { forceUint8Array } from './utils'
+import {
+  partialSign,
+  TransactionWithInternals,
+  verifySignatures,
+} from './web3js'
+import bs58 from 'bs58'
 
 const logInfo = debug('phan:info')
 const logDebug = debug('phan:debug')
 const logError = debug('phan:error')
+
+export const DEVNET = clusterApiUrl('devnet')
+export const TESTNET = clusterApiUrl('testnet')
+export const MAINNET_BETA = clusterApiUrl('mainnet-beta')
+export const LOCALNET = 'http://127.0.0.1:8899'
 
 /**
  * Standin for the the [https://phantom.app/ | phantom wallet] to use while testing.
@@ -32,7 +54,9 @@ export class PhantomWalletMock
   implements PhantomWallet
 {
   readonly isPhantom = true
+  private readonly _signer: Signer
   private _connection: Connection | undefined
+  private _transactionSignatures: string[] = []
   private constructor(
     private readonly _connectionURL: string,
     private readonly _keypair: Keypair,
@@ -44,6 +68,11 @@ export class PhantomWalletMock
       pubkey: _keypair.publicKey.toBase58(),
       commitment: _commitmentOrConfig,
     })
+
+    this._signer = {
+      publicKey: this._keypair.publicKey,
+      secretKey: forceUint8Array(this._keypair.secretKey),
+    }
   }
 
   get connection(): Connection {
@@ -63,13 +92,40 @@ export class PhantomWalletMock
   }
 
   get signer(): Signer {
-    return {
-      publicKey: this._keypair.publicKey,
-      secretKey: this._keypair.secretKey,
-    }
+    return this._signer
   }
 
-  signTransaction(transaction: Transaction): Promise<Transaction> {
+  get connectionURL() {
+    return this._connectionURL
+  }
+
+  get commitment(): Commitment | undefined {
+    const comm = this._commitmentOrConfig
+    if (comm == null) return undefined
+    return typeof comm === 'string' ? comm : comm.commitment
+  }
+
+  get transactionSignatures(): string[] {
+    return Array.from(this._transactionSignatures)
+  }
+
+  getLastConfirmedTransaction(
+    commitment?: Finality
+  ): Promise<null | ConfirmedTransaction> {
+    const lastSig = this._transactionSignatures.pop()
+    if (lastSig == null) {
+      logDebug('No transaction signature found')
+      return Promise.resolve(null)
+    }
+    return this.connection.getConfirmedTransaction(lastSig, commitment)
+  }
+
+  signTransaction(txIn: Transaction): Promise<Transaction> {
+    const transaction: TransactionWithInternals =
+      txIn as TransactionWithInternals
+    transaction._partialSign = partialSign.bind(transaction)
+    transaction._verifySignatures = verifySignatures.bind(transaction)
+
     logDebug(
       'Attempting to sign transaction with %d instruction(s)',
       transaction.instructions.length
@@ -81,8 +137,9 @@ export class PhantomWalletMock
         const { blockhash } = await this._connection.getRecentBlockhash()
         transaction.recentBlockhash = blockhash
 
-        transaction.sign(this.signer)
+        transaction.sign(this._signer)
         logDebug('Signed transaction successfully')
+        this._transactionSignatures.push(bs58.encode(transaction.signature!))
         resolve(transaction)
       } catch (err) {
         logError('Failed signing transaction')
@@ -101,7 +158,10 @@ export class PhantomWalletMock
     return new Promise(async (resolve, reject) => {
       try {
         assert(this._connection != null, 'Need to connect wallet first')
-        const signature = nacl.sign.detached(message, this._keypair.secretKey)
+        const signature = nacl.sign.detached(
+          forceUint8Array(message),
+          this._keypair.secretKey
+        )
         const res = {
           signature,
           publicKey: this._keypair.publicKey,
@@ -137,6 +197,21 @@ export class PhantomWalletMock
   }
 
   /**
+   * Added convenience API for Testing purposes
+   */
+  async requestAirdrop(
+    sol: number
+  ): Promise<RpcResponseAndContext<SignatureResult>> {
+    assert(this._connection != null, 'Need to connect requesting airdrop')
+
+    const signature = await this._connection.requestAirdrop(
+      this.publicKey,
+      LAMPORTS_PER_SOL * sol
+    )
+    return this.connection.confirmTransaction(signature)
+  }
+
+  /**
    * Creates a {@see PhantomWalletMock} instance with the provided info.
    *
    * @param connectionURL cluster to connect to, i.e. `https://api.devnet.solana.com` or `http://127.0.0.1:8899`
@@ -149,4 +224,12 @@ export class PhantomWalletMock
     keypair: Keypair,
     commitmentOrConfig?: Commitment | ConnectionConfig
   ) => new PhantomWalletMock(connectionURL, keypair, commitmentOrConfig)
+}
+
+export const initWalletMockProvider = (winin: Window) => {
+  const win = winin as Window & { solana: PhantomWallet | undefined }
+  const payer = Keypair.generate()
+  const wallet = PhantomWalletMock.create(LOCALNET, payer, 'confirmed')
+  win.solana = wallet
+  return { wallet, payer }
 }
