@@ -28,6 +28,10 @@ const { wallet, payer } = await setupWithPayer()
 window.solana = wallet
 ```
 
+![assets/cypress.png](assets/cypress.png)
+
+## API
+
 [API documentation](https://thlorenz.github.io/phan-wallet-mock/docs/index.html)
 
 ## How it Works
@@ -39,6 +43,11 @@ To do that it never requires the user's approval like the original does in order
 testing.
 
 **THEREFORE MAKE SURE TO ONLY USE THIS WHILE RUNNING TESTS WITH FRESHLY GENERATED KEYPAIRS!!!**
+
+## Apps using phan-wallet-mock
+
+- [example app based on phantom wallet
+  sandbox](https://github.com/thlorenz/phan-wallet-mock-react-example)
 
 ## LICENSE
 
