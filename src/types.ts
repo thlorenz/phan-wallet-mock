@@ -1,5 +1,6 @@
 import { EventEmitter } from '@solana/wallet-adapter-base'
-import { Transaction } from '@solana/web3.js'
+import { Transaction, TransactionError } from '@solana/web3.js'
+import { PhantomWalletMock } from './phan-wallet-mock'
 
 export interface PhantomWalletEvents {
   connect(...args: unknown[]): unknown
@@ -21,4 +22,23 @@ export interface PhantomWallet extends EventEmitter<PhantomWalletEvents> {
   connect(): Promise<void>
   disconnect(): Promise<void>
   _handleDisconnect(...args: unknown[]): unknown
+}
+
+export type WindowWithPhanWalletMock = typeof window & {
+  solana: PhantomWalletMock
+}
+export type WindowWithMaybePhanWalletMock = typeof window & {
+  solana: PhantomWalletMock | undefined
+}
+export type WindowWithPhanWallet = typeof window & { solana: PhantomWallet }
+export type WindowWithMaybePhanWallet = typeof window & {
+  solana: PhantomWallet | undefined
+}
+
+export type TransactionSummary = {
+  logMessages: string[]
+  fee: number | undefined
+  slot: number
+  blockTime: number
+  err: TransactionError | null | undefined
 }

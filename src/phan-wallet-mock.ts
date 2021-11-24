@@ -15,7 +15,7 @@ import {
 export * from './types'
 
 import { EventEmitter } from 'eventemitter3'
-import { PhantomWallet, PhantomWalletEvents } from './types'
+import { PhantomWallet, PhantomWalletEvents, TransactionSummary } from './types'
 import assert_module from 'assert'
 
 const assert: typeof import('assert') = assert_module.strict ?? assert_module
@@ -54,12 +54,12 @@ export class PhantomWalletMock
   implements PhantomWallet
 {
   readonly isPhantom = true
-  private readonly _signer: Signer
+  private _signer: Signer
   private _connection: Connection | undefined
   private _transactionSignatures: string[] = []
   private constructor(
     private readonly _connectionURL: string,
-    private readonly _keypair: Keypair,
+    private _keypair: Keypair,
     private readonly _commitmentOrConfig?: Commitment | ConnectionConfig
   ) {
     super()
@@ -69,12 +69,22 @@ export class PhantomWalletMock
       commitment: _commitmentOrConfig,
     })
 
-    this._signer = {
-      publicKey: this._keypair.publicKey,
-      secretKey: forceUint8Array(this._keypair.secretKey),
+    this._signer = this._signerFromKeypair(this._keypair)
+  }
+
+  _signerFromKeypair(keypair: Keypair) {
+    return {
+      publicKey: keypair.publicKey,
+      secretKey: forceUint8Array(keypair.secretKey),
     }
   }
 
+  // -----------------
+  // Get info/properties
+  // -----------------
+  /**
+   * The underlying connection to a fullnode JSON RPC endpoint
+   */
   get connection(): Connection {
     assert(
       this._connection != null,
@@ -83,32 +93,82 @@ export class PhantomWalletMock
     return this._connection
   }
 
+  /**
+   * `true` if the wallet was connected via {@link PhantomWalletMock#connect}
+   */
   get isConnected(): boolean {
     return this._connection != null
   }
 
+  /**
+   * Public key of the currently used wallet.
+   */
   get publicKey() {
     return this._keypair.publicKey
   }
 
+  /**
+   * Secret key of the currently used wallet.
+   * @category TestAPI
+   */
+  get secretKey() {
+    return this._keypair.secretKey.toString()
+  }
+
+  /**
+   * {@link Signer} of the currently used wallet.
+   */
   get signer(): Signer {
     return this._signer
   }
 
+  /**
+   * Connection URL used for the underlying connection.
+   * @category TestAPI
+   */
   get connectionURL() {
     return this._connectionURL
   }
 
+  /**
+   * Default commitment used for transactions.
+   * @category TestAPI
+   */
   get commitment(): Commitment | undefined {
     const comm = this._commitmentOrConfig
     if (comm == null) return undefined
     return typeof comm === 'string' ? comm : comm.commitment
   }
 
+  /**
+   * All transactions signatures made since wallet was created ordered oldest to most recent.
+   * @category TestAPI
+   */
   get transactionSignatures(): string[] {
     return Array.from(this._transactionSignatures)
   }
 
+  /**
+   * Fetch the balance for the wallet's account.
+   * @category TestAPI
+   */
+  getBalance(commitment: Commitment = 'confirmed') {
+    return this.connection.getBalance(this.publicKey, commitment)
+  }
+
+  /**
+   * Fetch the balance in Sol for the wallet's account.
+   * @category TestAPI
+   */
+  async getBalanceSol(commitment: Commitment = 'confirmed') {
+    const lamports = await this.getBalance(commitment)
+    return lamports / LAMPORTS_PER_SOL
+  }
+
+  /**
+   * Fetches transaction details for the last confirmed transaction signed with this wallet.
+   * @category TestAPI
+   */
   getLastConfirmedTransaction(
     commitment?: Finality
   ): Promise<null | ConfirmedTransaction> {
@@ -120,6 +180,50 @@ export class PhantomWalletMock
     return this.connection.getConfirmedTransaction(lastSig, commitment)
   }
 
+  /**
+   * Fetches transaction details for the last confirmed transaction signed with this wallet and
+   * returns its summary.
+   * @category TestAPI
+   */
+  async lastConfirmedTransactionSummary(
+    commitment?: Finality
+  ): Promise<TransactionSummary | undefined> {
+    const tx = await this.getLastConfirmedTransaction(commitment)
+    if (tx == null) return
+
+    const logMessages = tx.meta?.logMessages ?? []
+    const fee = tx.meta?.fee
+    const slot = tx.slot
+    const blockTime = tx.blockTime ?? 0
+    const err = tx.meta?.err
+    return { logMessages, fee, slot, blockTime, err }
+  }
+
+  /**
+   * Fetches transaction details for the last confirmed transaction signed with this wallet and
+   * returns its summary that can be used to log it to the console.
+   * @category TestAPI
+   */
+  async lastConfirmedTransactionString(commitment?: Finality): Promise<string> {
+    const tx = await this.getLastConfirmedTransaction(commitment)
+    if (tx == null) {
+      return 'No confirmed transaction found'
+    }
+    const logs = tx.meta?.logMessages?.join('\n  ')
+    const fee = tx.meta?.fee
+    const slot = tx.slot
+    const blockTimeSecs = new Date(tx.blockTime ?? 0).getSeconds()
+    const err = tx.meta?.err
+    return `fee: ${fee} slot: ${slot} blockTime: ${blockTimeSecs}s err: ${err}
+  ${logs}`
+  }
+
+  // -----------------
+  // Signing Transactions
+  // -----------------
+  /**
+   * Signs the transaction using the current wallet.
+   */
   signTransaction(txIn: Transaction): Promise<Transaction> {
     const transaction: TransactionWithInternals =
       txIn as TransactionWithInternals
@@ -149,11 +253,20 @@ export class PhantomWalletMock
     })
   }
 
+  /**
+   * Signs all transactions using the current wallet.
+   */
   signAllTransactions(transactions: Transaction[]): Promise<Transaction[]> {
     logDebug('Signing %d transactions', transactions.length)
     return Promise.all(transactions.map((tx) => this.signTransaction(tx)))
   }
 
+  // -----------------
+  // Signing Message
+  // -----------------
+  /**
+   * Signs the message using the current wallet.
+   */
   signMessage(message: Uint8Array): Promise<{ signature: Uint8Array }> {
     return new Promise(async (resolve, reject) => {
       try {
@@ -175,7 +288,16 @@ export class PhantomWalletMock
     })
   }
 
-  connect(): Promise<void> {
+  // -----------------
+  // Managing Connection
+  // -----------------
+  /**
+   * Connects the wallet to the URL provided on wallet creation.
+   * This needs to be called before attempting to sign messages or transactions.
+   *
+   * emits 'connect'
+   */
+  async connect(): Promise<void> {
     this._connection = new Connection(
       this._connectionURL,
       this._commitmentOrConfig
@@ -185,6 +307,11 @@ export class PhantomWalletMock
     return Promise.resolve()
   }
 
+  /**
+   * Disconnects the wallet.
+   *
+   * emits 'disconnect'
+   */
   disconnect(): Promise<void> {
     this._connection = undefined
     logDebug('wallet disconnected')
@@ -196,8 +323,12 @@ export class PhantomWalletMock
     return this.emit('disconnect', args)
   }
 
+  // -----------------
+  // Added convenience API for Testing purposes
+  // -----------------
   /**
-   * Added convenience API for Testing purposes
+   * Drops sol to the currently connected wallet.
+   * @category TestAPI
    */
   async requestAirdrop(
     sol: number
@@ -212,6 +343,16 @@ export class PhantomWalletMock
   }
 
   /**
+   * Changes the Wallet to the provided keypair
+   * This updates the signer as well.
+   * @category TestAPI
+   */
+  changeWallet(keypair: Keypair) {
+    this._keypair = keypair
+    this._signer = this._signerFromKeypair(keypair)
+  }
+
+  /**
    * Creates a {@see PhantomWalletMock} instance with the provided info.
    *
    * @param connectionURL cluster to connect to, i.e. `https://api.devnet.solana.com` or `http://127.0.0.1:8899`
@@ -221,7 +362,7 @@ export class PhantomWalletMock
    */
   static create = (
     connectionURL: string,
-    keypair: Keypair,
+    keypair: Keypair = Keypair.generate(),
     commitmentOrConfig?: Commitment | ConnectionConfig
   ) => new PhantomWalletMock(connectionURL, keypair, commitmentOrConfig)
 }
